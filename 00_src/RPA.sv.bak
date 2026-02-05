@@ -1,0 +1,50 @@
+module RPA #( parameter DATA_WIDTH = 8 )
+(
+    input wire [DATA_WIDTH-1:0] a_in,
+    input wire [DATA_WIDTH-1:0] b_in,
+    input wire c_in,
+
+    output wire [DATA_WIDTH-1:0] sum,
+    output reg c_out
+);
+
+wire [DATA_WIDTH:0] carry;
+assign carry[0] = c_in;
+
+genvar i;
+generate
+    for(i=0; i<DATA_WIDTH; i=i+1) begin
+        FA FullAdder(
+            .a_in(a_in[i]),
+            .b_in(b_in[i]),
+            .c_in(carry[i]),
+
+            .sum(sum[i]),
+            .c_out(carry[i+1])
+        );
+    end
+endgenerate
+
+always @(*) begin
+    c_out = carry[DATA_WIDTH];
+end
+
+endmodule
+
+
+//------------------------------Full Adder Sub Modules------------------------------------------
+module FA(
+    input wire a_in,
+    input wire b_in,
+    input wire c_in,
+
+    output reg sum,
+    output reg c_out
+);
+
+always@(*) begin
+   sum = a_in ^ b_in ^ c_in;
+   c_out = ((a_in ^ b_in) & c_in) | (a_in & b_in);
+end
+
+endmodule
