@@ -11,8 +11,9 @@ Designing a FPU (Floating Point Unit) which performs addition and subtraction of
 <img width="1000" height="774" alt="image" src="https://github.com/user-attachments/assets/c71f5d96-2730-4a65-a20f-ba9af3e3ee65" />
 
 ## 2. Interface
-<img width="1000" height="222" alt="image" src="https://github.com/user-attachments/assets/e66af3c6-9fe9-4fa8-bcb6-c69a46772949" />
+<img width="1000" height="176" alt="image" src="https://github.com/user-attachments/assets/9fe00b43-6b61-45d2-b930-ebc087c143fe" />
+
 
 # Functional Description
-<img width="1000" height="385" alt="image" src="https://github.com/user-attachments/assets/a6fdc70d-fa8c-4eb8-ab58-1625ebac53eb" />
-<img width="1000" height="964" alt="image" src="https://github.com/user-attachments/assets/694194e4-7725-4377-b45f-f560f7fee717" />
+<img width="1000" height="826" alt="image" src="https://github.com/user-attachments/assets/174d8acd-11d7-465e-a3f0-e1a85ee63ae5" />
+
