@@ -8,6 +8,7 @@ Designing a FPU (Floating Point Unit) which performs addition and subtraction of
 - **Add mantissas:** Add the two mantissas together. Remember, subtracting a number by a negative number is equivalent to addition.
 - **Normalize the result:** If adding the mantissas results in a value that is not normalized (for instance, a carry-out or a number with a leading zero), adjust the exponent and shift the mantissa to normalize it. If the sum is too large or too small for the available bits, this is an overflow or underflow error.
 - **Round the result:** Round the final result to fit the required precision, which can introduce inaccuracies.
+<img width="1000" height="774" alt="image" src="https://github.com/user-attachments/assets/c71f5d96-2730-4a65-a20f-ba9af3e3ee65" />
 
 ## 2. Interface
 <img width="1000" height="222" alt="image" src="https://github.com/user-attachments/assets/e66af3c6-9fe9-4fa8-bcb6-c69a46772949" />
