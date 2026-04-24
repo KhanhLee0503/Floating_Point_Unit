@@ -16,4 +16,7 @@ Designing a FPU (Floating Point Unit) which performs addition and subtraction of
 
 # Functional Description
 <img width="1000" height="826" alt="image" src="https://github.com/user-attachments/assets/174d8acd-11d7-465e-a3f0-e1a85ee63ae5" />
+## Sign Computation Module
+- At first, we have to change the sign of the second data input (second floating point), which means we need to change A-B to A+(-B) to make the computing proccess become much easier.
+- To do that we can XOR the sign of the second floating point input and the add-sub selecting input. The output is the effective sign of the second floating point input.
 
