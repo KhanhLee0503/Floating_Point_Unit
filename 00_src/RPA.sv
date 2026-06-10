@@ -1,50 +1,46 @@
 module RPA #( parameter DATA_WIDTH = 8 )
 (
-    input wire [DATA_WIDTH-1:0] a_in,
-    input wire [DATA_WIDTH-1:0] b_in,
-    input wire c_in,
+    input logic [DATA_WIDTH-1:0] I_A_IN,
+    input logic [DATA_WIDTH-1:0] I_B_IN,
+    input logic                  I_C_IN,
 
-    output wire [DATA_WIDTH-1:0] sum,
-    output reg c_out
+    output logic [DATA_WIDTH-1:0] O_SUM,
+    output logic                  O_C_OUT
 );
 
-wire [DATA_WIDTH:0] carry;
-assign carry[0] = c_in;
+logic [DATA_WIDTH:0] carry;
 
 genvar i;
 generate
-    for(i=0; i<8; i=i+1) begin
+    for(i = 0; i < DATA_WIDTH; i = i + 1) begin : gen_fa
         FA FullAdder(
-            .a_in(a_in[i]),
-            .b_in(b_in[i]),
-            .c_in(carry[i]),
+            .I_A_IN(I_A_IN[i]),
+            .I_B_IN(I_B_IN[i]),
+            .I_C_IN(carry[i]),
 
-            .sum(sum[i]),
-            .c_out(carry[i+1])
+            .O_SUM(O_SUM[i]),
+            .O_C_OUT(carry[i+1])
         );
     end
 endgenerate
 
-always @(*) begin
-    c_out = carry[DATA_WIDTH];
-end
+assign O_C_OUT = carry[DATA_WIDTH];
+assign carry[0] = I_C_IN;
 
-endmodule
+endmodule : RPA
 
 
 //------------------------------Full Adder Sub Modules------------------------------------------
 module FA(
-    input wire a_in,
-    input wire b_in,
-    input wire c_in,
+    input logic  I_A_IN,
+    input logic  I_B_IN,
+    input logic  I_C_IN,
 
-    output reg sum,
-    output reg c_out
+    output logic O_SUM,
+    output logic O_C_OUT
 );
 
-always@(*) begin
-   sum = a_in ^ b_in ^ c_in;
-   c_out = (a_in ^ b_in) & c_in | (a_in & b_in);
-end
+assign O_SUM = I_A_IN ^ I_B_IN ^ I_C_IN;
+assign O_C_OUT = ((I_A_IN ^ I_B_IN) & I_C_IN) | (I_A_IN & I_B_IN);
 
-endmodule
+endmodule : FA

@@ -1,178 +1,185 @@
-module fpu_top(
-    input wire [31:0] i_32_a,  //bit 31: sign | bit 30 -> Bit 23: Exponent | Bit 22 -> Bit 0: Mantissa  
-    input wire [31:0] i_32_b,  //bit 31: sign | bit 30 -> Bit 23: Exponent | Bit 22 -> Bit 0: Mantissa  
-
-    input wire i_add_sub,
-    
-    output wire [31:0] o_32_s,
-
-    output reg o_ov_flag,
-    output reg o_un_flag 
+module FPU_TOP(
+    input logic  [31:0]  I_FP_DATA_A,
+    input logic  [31:0]  I_FP_DATA_B,
+    input logic          I_ADD_SUB, // 1: Subtraction, 0: Addition
+    output logic         O_FP_SIGN,
+    output logic [30:23] O_FP_EXPONENT,
+    output logic [22:0]  O_FP_MANTISSA,
+    output logic         O_FP_ZERO,
+    output logic         O_FP_INFINITY,
+    output logic         O_FP_SUBNORMAL,
+    output logic         O_FP_NOT_A_NUMBER
 );
 
-//****Adder Signals***
-reg [25:0] adder_in1;
-wire [25:0] adder_in1_pre;
+//====================================
+//              SIGNALS
+//====================================
+//** Mantissa Comparison
+    logic        w_mantissa_a_gt_b;
+    logic        w_mantissa_a_eq_b;
+    logic [22:0] w_mantissa_difference;
+//** Exponent
+    logic        w_exponent_a_gt_b;
+    logic        w_exponent_a_eq_b;
+    logic [7:0]  w_exponent_difference_sub;
+    logic [7:0]  w_exponent_difference;
+//** First Branch
+    logic [23:0] w_in_roundgen_1;
+    logic [26:0] w_roundgen_two_complements_1;
+    logic [28:0] w_two_complements_1_adder;
+    logic [28:0] w_adder_in_a;
+    logic [28:0] w_mux_adder_in_a_1;
+    logic [28:0] w_mux_adder_in_a_2;
+//** Second Branch 
+    logic [23:0] w_in_roundgen_2;
+    logic [26:0] w_roundgen_two_complements_2;
+    logic [28:0] w_two_complements_2_adder;
+    logic [47:0] w_shifter_roundgen_2;
+    logic [28:0] w_adder_in_b;
+    logic [28:0] w_mux_adder_in_b_1;
+    logic [28:0] w_mux_adder_in_b_2;
+//** Normalization
+    logic [27:0] w_adder_normalize;
+    logic [28:0] w_adder_normalize_sub;
+    logic [28:0] w_adder_normalize_sub_n;
+    logic [7:0]  w_exponent_normalize_sub;
+//** Roundup
+    logic [26:0] w_normalized_roundup;
+    logic        w_exponent_adjust_roundup;
 
-reg [25:0] adder_in2;
-wire [23:0] adder_in2_shifted;
-wire [22:0] adder_in2_pre1;
-wire [25:0] adder_in2_pre2;
-
-wire [25:0] adder_in1_complemented;
-wire [25:0] adder_in2_complemented;
-
-wire [25:0] adder_IN1;
-wire [25:0] adder_IN2;
-
-
-//***Exponent Difference Signals***
-wire [7:0] ex_b_inverted; 
-wire [7:0] difference_pre1;
-wire [7:0] difference_pre2;
-wire [7:0] difference;
-wire a_gt_b;
-
-//***Mantissa Comparator Signals***
-wire mantissa_a_gt_b;
-
-//***Normalize Module Signals***
-wire [25:0] mantissa_out_pre;
-wire [25:0] mantissa_out_complemented;
-wire [23:0] mantissa_out;
-wire [7:0] exponent_normalize;
-
-//-----------------------------Internal Connections-----------------------------------
-
-assign ex_b_inverted = ~i_32_b[30:23];
-
-RPA Exponent_Difference(
-    .a_in(i_32_a[30:23]),
-    .b_in(ex_b_inverted),
-    .c_in(1'b1),
-
-    .sum(difference_pre1),
-    .c_out(a_gt_b)
-);
-   
-two_complement two_complement(
-    .data_in(difference_pre1),
-    .data_out(difference_pre2)
-);
- 
-assign difference = (a_gt_b) ? difference_pre1 : difference_pre2;
-
-Barrel_Shifter Right_Shifter( 
-    .data_in({1'b1,adder_in2_pre1}),
-    .shift_amount(difference[4:0]),
-
-    .data_out(adder_in2_shifted)
+//====================================
+//          SIGN COMPUTATION 
+//====================================
+SIGN_COMPUTATION sign_computation_inst
+(
+    .I_ADD_SUB     ( I_ADD_SUB),
+    .I_SIGN_A      ( I_FP_DATA_A[31]),
+    .I_SIGN_B      ( I_FP_DATA_B[31]),
+    .I_EXPONENT_GT ( w_exponent_a_gt_b),
+    .I_EXPONENT_EQ ( w_exponent_a_eq_b),
+    .I_MANTISSA_GT ( w_mantissa_a_gt_b),
+    .I_MANTISSA_EQ ( w_mantissa_a_eq_b),
+    .O_SIGN_OUT    ( O_FP_SIGN)
 );
 
-assign adder_in2_pre1 = (a_gt_b) ? i_32_b[22:0] : i_32_a[22:0];
-assign adder_in2_pre2 = {2'b0,adder_in2_shifted};
-assign adder_in1_pre = (a_gt_b) ? {3'b001,i_32_a[22:0]} : {3'b001,i_32_b[22:0]};
-
-two_complement #(.DATA_WIDTH(26)) two_complement_adder_in1(
-    .data_in(adder_in1_pre),
-    .data_out(adder_in1_complemented)
+//====================================
+//              EXPONENT
+//====================================
+COMPARISION #(.DATA_WIDTH(8)) rpa_exponent_comparator
+(
+    .I_A_IN  ( I_FP_DATA_A[30:23]),
+    .I_B_IN  ( I_FP_DATA_B[30:23]),
+    .O_SUM   ( w_exponent_difference_sub),
+    .O_C_OUT ( w_exponent_a_gt_b)
 );
 
-two_complement #(.DATA_WIDTH(26)) two_complement_adder_in2(
-    .data_in(adder_in2_pre2),
-    .data_out(adder_in2_complemented)
+assign w_exponent_a_eq_b     = (w_exponent_difference_sub == 8'b0);
+assign w_exponent_difference = w_exponent_a_gt_b ? w_exponent_difference_sub : ~w_exponent_difference_sub + 1;
+
+//====================================
+//              MANTISSA
+//====================================
+//** Mantissa Comparision
+COMPARISION #(.DATA_WIDTH(23)) rpa_mantissa_comparator
+(
+    .I_A_IN  ( I_FP_DATA_A[22:0]),
+    .I_B_IN  ( I_FP_DATA_B[22:0]),
+    .O_SUM   ( w_mantissa_difference),
+    .O_C_OUT ( w_mantissa_a_gt_b)
+);
+assign w_mantissa_a_eq_b = (w_mantissa_difference == 23'b0);
+
+//** First Branch
+assign w_in_roundgen_1 = w_exponent_a_gt_b ? {1'b1,I_FP_DATA_A[22:0]} : {1'b1,I_FP_DATA_B[22:0]};
+
+ROUND_GEN round_gen_1(
+    .I_MANTISSA ( {w_in_roundgen_1, 24'b0}),
+    .O_MANTISSA ( w_roundgen_two_complements_1)
 );
 
-always@(*) begin
-    if(a_gt_b) begin
-        if(i_32_b[31] ^ i_add_sub)
-            adder_in2 = adder_in2_complemented; 
-
-        else
-            adder_in2 = adder_in2_pre2;
-    end 
-    else begin
-        if(i_32_a[31])
-            adder_in2 = adder_in2_complemented; 
-        else
-            adder_in2 = adder_in2_pre2;
-    end
-end
-
-
-always@(*) begin
-    if(a_gt_b) begin
-        if(i_32_a[31])
-            adder_in1 = adder_in1_complemented; 
-        else
-            adder_in1 = adder_in1_pre;
-    end 
-    else begin
-        if(i_32_b[31] ^ i_add_sub)
-            adder_in1 = adder_in1_complemented; 
-        else
-            adder_in1 = adder_in1_pre;
-    end
-end
-
-assign adder_IN1 = adder_in1;
-assign adder_IN2 = adder_in2;
-
-addsub_block ADDER( 
-    .a_in({adder_IN1}),
-    .b_in({adder_IN2}),
-
-    .sel(1'b0),         //0 - ADD | 1 - SUB
-
-    .sum(mantissa_out_pre),
-    .c_out()
+TWO_COMPLEMENTS #(.DATA_WIDTH(29)) two_complements_1
+(
+    .I_DATA_IN  ( {2'b00, w_roundgen_two_complements_1}),
+    .O_DATA_OUT ( w_two_complements_1_adder)
 );
 
+//** Second Branch
+assign w_in_roundgen_2 = w_exponent_a_gt_b ? {1'b1,I_FP_DATA_B[22:0]} : {1'b1,I_FP_DATA_A[22:0]};
 
-assign mantissa_out_complemented = (mantissa_out_pre[25]) ? ~(mantissa_out_pre) + 25'h1 : mantissa_out_pre;
-
-
-addsub_block #(.DATA_WIDTH(23)) Mantissa_Compare(
-    .a_in(i_32_a[22:0]),
-    .b_in(i_32_b[22:0]),
-
-    .sel(1'b1),         //0 - ADD | 1 - SUB
-    .sum(),
-    .c_out(mantissa_a_gt_b)
+BARREL_RIGHT_SHIFTER_48BIT barrel_right_shifter_48bit(
+    .I_DATA     ( {w_in_roundgen_2, 24'b0}),
+    .I_SHAMT    ( w_exponent_difference[5:0]),
+    .I_SHIFT_IN ( 1'b0),
+    .O_DATA     ( w_shifter_roundgen_2)
 );
 
-sign_computation sign_computation(
-    .ex_a_gt_b(a_gt_b),
-    .ex_diff(difference),
-    .mantissa_a_gt_b(mantissa_a_gt_b),
-
-    .i_add_sub(i_add_sub),
-
-    .sign_a(i_32_a[31]),
-    .sign_b(i_32_b[31] ^ i_add_sub),
-
-    .sign_out(o_32_s[31])
+ROUND_GEN round_gen_2(
+    .I_MANTISSA ( w_shifter_roundgen_2),
+    .O_MANTISSA ( w_roundgen_two_complements_2)
 );
 
-
-assign exponent_normalize = (a_gt_b) ? i_32_a[30:23] : i_32_b[30:23];
-   
-
-normalize Normalize(
-    .exponent_in(exponent_normalize),
-    .mantissa_in(mantissa_out_complemented[24:0]),
-    .normalized_out(mantissa_out),
-    .exponent_out(o_32_s[30:23])
+TWO_COMPLEMENTS #(.DATA_WIDTH(29)) two_complements_2
+(
+    .I_DATA_IN  ( {2'b00, w_roundgen_two_complements_2}),
+    .O_DATA_OUT ( w_two_complements_2_adder)
 );
 
-assign o_32_s[22:0] = mantissa_out[22:0];
+//**Adder Input
+assign w_mux_adder_in_a_1 = (I_FP_DATA_A[31]) ? (w_two_complements_1_adder) : ({2'b00, w_roundgen_two_complements_1});
+assign w_mux_adder_in_a_2 = (I_FP_DATA_B[31] ^ I_ADD_SUB) ? (w_two_complements_1_adder) : ({2'b00, w_roundgen_two_complements_1});
+assign w_adder_in_a       = w_exponent_a_gt_b ? w_mux_adder_in_a_1 : w_mux_adder_in_a_2;
 
-always@(*) begin
-    o_ov_flag = (o_32_s[30:23] == 8'b1111_1111);
-end
+assign w_mux_adder_in_b_2 = (I_FP_DATA_A[31]) ? (w_two_complements_2_adder) : ({2'b00, w_roundgen_two_complements_2});
+assign w_mux_adder_in_b_1 = (I_FP_DATA_B[31] ^ I_ADD_SUB) ? (w_two_complements_2_adder) : ({2'b00, w_roundgen_two_complements_2});
+assign w_adder_in_b       = w_exponent_a_gt_b ? w_mux_adder_in_b_1 : w_mux_adder_in_b_2;
 
-always @(*) begin
-    o_un_flag = (o_32_s[30:23] == 8'b0000_0000);
-end
+RPA #(.DATA_WIDTH(29)) rpa_adder
+(
+    .I_A_IN  ( w_adder_in_a),
+    .I_B_IN  ( w_adder_in_b),
+    .I_C_IN  ( 1'b0),
+    .O_SUM   ( w_adder_normalize_sub),
+    .O_C_OUT ( )
+);
 
-endmodule
+assign w_adder_normalize_sub_n = ~w_adder_normalize_sub + 1;
+assign w_adder_normalize       = w_adder_normalize_sub[28] ? w_adder_normalize_sub_n[27:0] : w_adder_normalize_sub[27:0];
+
+//====================================
+//     NORMALIZATION AND ROUNDING   
+//===================================
+NORMALIZE normalize(
+    .I_DATA_IN  ( w_adder_normalize),
+    .I_EXPONENT ( w_exponent_a_gt_b ? I_FP_DATA_A[30:23] : I_FP_DATA_B[30:23]),
+    .O_MANTISSA ( w_normalized_roundup),
+    .O_EXPONENT ( w_exponent_normalize_sub)
+);
+
+ROUND_UP round_up(
+    .I_MANTISSA ( w_normalized_roundup),
+    .O_MANTISSA ( O_FP_MANTISSA),
+    .O_EXP_ADJUST ( w_exponent_adjust_roundup )
+);
+
+//====================================
+//        CORNER CASE CHECKING 
+//====================================
+CORNER_CASE_CHECK corner_case_check(
+    .I_ADD_SUB      ( I_ADD_SUB),
+    .I_SIGN_A       ( I_FP_DATA_A[31]),
+    .I_SIGN_B       ( I_FP_DATA_B[31]),
+    .I_PRE_A_EXPONENT ( I_FP_DATA_A[30:23]),
+    .I_PRE_B_EXPONENT ( I_FP_DATA_B[30:23]),
+    .I_PRE_A_MANTISSA ( I_FP_DATA_A[22:0]),
+    .I_PRE_B_MANTISSA ( I_FP_DATA_B[22:0]),
+    .I_MANTISSA     ( O_FP_MANTISSA),
+    .I_EXPONENT     ( O_FP_EXPONENT),
+    .O_ZERO         ( O_FP_ZERO),
+    .O_SUBNORMAL    ( O_FP_SUBNORMAL),
+    .O_INFINITY     ( O_FP_INFINITY),
+    .O_NOT_A_NUMBER ( O_FP_NOT_A_NUMBER)
+);
+
+assign O_FP_EXPONENT = w_exponent_normalize_sub + w_exponent_adjust_roundup;
+
+endmodule: FPU_TOP

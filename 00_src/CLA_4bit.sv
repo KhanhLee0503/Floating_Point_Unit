@@ -1,33 +1,29 @@
-module CLA_4bit(
-    input wire [3:0] a,
-    input wire [3:0] b,
-    input wire carry_in,
+module CLA_4BIT(
+    input logic [3:0]  I_A,
+    input logic [3:0]  I_B,
+    input logic        I_CARRY_IN,
 
-    output reg [3:0] sum,
-    //output reg carry_out,
-    output reg P_Out,
-    output reg G_Out
+    output logic [3:0] O_SUM,
+    output logic       O_P_OUT,
+    output logic       O_G_OUT
 );
 
-wire [3:0] P;
-wire [3:0] G;
-wire [4:0] carry;
+logic [3:0] P;
+logic [3:0] G;
+logic [4:0] carry;
 
-assign P = a^b;
-assign G = a&b;
+assign P = I_A ^ I_B;
+assign G = I_A & I_B;
 
-assign carry[0] = carry_in;
+assign carry[0] = I_CARRY_IN;
 assign carry[1] = G[0] | (P[0] & carry[0]);
 assign carry[2] = G[1] | (P[1] & G[0]) | (P[1] & P[0] & carry[0]);
 assign carry[3] = G[2] | (P[2] & G[1]) | (P[2] & P[1] & G[0]) | (P[2] & P[1] & P[0] & carry[0]);
 //assign carry[4] = G[3] | (P[3] & G[2]) | (P[3] & P[2] & G[1]) | (P[3] & P[2] & P[1] & G[0]) | (P[3] & P[2] & P[1] & P[0] & carry[0]);
 
-always@(*) begin
-    sum = P ^ carry[3:0];
-    //carry_out = carry[4];
-    P_Out = &P;
-    G_Out = G[3] | (P[3] & G[2]) | (P[3] & P[2] & G[1]) | (P[3] & P[2] & P[1] & G[0]);
-end
+assign O_SUM   = P ^ carry[3:0];
+    //O_CARRY_OUT = carry[4];
+assign O_P_OUT = &P;
+assign O_G_OUT = G[3] | (P[3] & G[2]) | (P[3] & P[2] & G[1]) | (P[3] & P[2] & P[1] & G[0]);
 
-
-endmodule
+endmodule : CLA_4BIT

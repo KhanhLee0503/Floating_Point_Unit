@@ -1,4 +1,4 @@
-module SIGN_COMPUTATION(
+module SIGN_COMPUTATION
     input logic I_ADD_SUB,
     input logic I_SIGN_A,
     input logic I_SIGN_B,
@@ -22,8 +22,7 @@ assign eff_sign_b = I_SIGN_B ^ I_ADD_SUB;
 assign a          = I_SIGN_A ^ eff_sign_b;
 assign b          = (c) ? I_SIGN_A : eff_sign_b;
 assign c          = I_EXPONENT_GT | (I_MANTISSA_GT & I_EXPONENT_EQ);
-assign d          = (a) ? b : I_SIGN_A;
-assign e          = (I_EXPONENT_EQ & I_MANTISSA_EQ & a);
-assign O_SIGN_OUT = (e) ? 1'b0 : d;
+assign d          = (a) ? I_SIGN_A : b;
+assign O_SIGN_OUT = (I_EXPONENT_EQ & I_MANTISSA_EQ & a) ? 1'b0 : d;
 
 endmodule : SIGN_COMPUTATION
