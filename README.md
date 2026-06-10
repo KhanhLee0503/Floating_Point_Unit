@@ -1,13 +1,26 @@
 # Floating-Point-Unit Adder and Subtractor
 Designing a FPU (Floating Point Unit) which performs addition and subtraction of two 32-bit floating-point numbers for ASIC or FPGA implementations.
+
 ## 1. Overview
 This project implements a floating-point adder and subtractor in RTL. The design supports basic floating-point addition and subtraction operations and includes special-case handling for overflow, underflow, zero, infinity, NaN, and sub-threshold results.
 
 The main purpose of this design is to perform arithmetic operations on floating-point numbers while correctly detecting and handling exceptional conditions according to the supported floating-point format.
 
+## 2. Features
+- Floating-point addition
+- Floating-point subtraction
+- Sign, exponent, and mantissa extraction
+- Exponent comparison and mantissa alignment
+- Mantissa addition/subtraction
+- Result normalization
+- Overflow detection
+- Underflow detection
+- Zero result detection
+- Infinity handling
+- NaN handling
+- Sub-threshold result handling
 
-
-## 2. Operation
+## 3. Design Operation
 **Adding and Subtracting floating point numbers procedures:**
 - **Extract and Unpack:** Separate the sign, exponent, and mantissa from both floating-point numbers.
 - **Creating Guard, Round, and Sticky Bits:** Append 24 zero bits to the least significant side of the mantissa to extend its precision. This ensures that no significant bit information is lost during the exponent alignment step, especially when the mantissa is shifted to match the larger exponent.
