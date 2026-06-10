@@ -1,7 +1,14 @@
-# Floating-Point-Unit
+# Floating-Point-Unit Adder and Subtractor
 Designing a FPU (Floating Point Unit) which performs addition and subtraction of two 32-bit floating-point numbers.
-# Overview
-## 1. Features
+# 1. Overview
+This project implements a floating-point adder and subtractor in RTL. The design supports basic floating-point addition and subtraction operations and includes special-case handling for overflow, underflow, zero, infinity, NaN, and sub-threshold results.
+
+The main purpose of this design is to perform arithmetic operations on floating-point numbers while correctly detecting and handling exceptional conditions according to the supported floating-point format.
+
+
+
+# 2. Operation
+<img width="1000" height="176" alt="image" src="https://github.com/user-attachments/assets/9fe00b43-6b61-45d2-b930-ebc087c143fe" />
 **Adding and Subtracting floating point numbers procedures:**
 - **Extract and Unpack:** Separate the sign, exponent, and mantissa from both floating-point numbers.
 - **Align exponents:** Find the number with the smaller exponent. Shift its mantissa to the right until its exponent matches the larger one. The shift amount determines how many bits are shifted to the right.
@@ -9,10 +16,6 @@ Designing a FPU (Floating Point Unit) which performs addition and subtraction of
 - **Normalize the result:** If adding the mantissas results in a value that is not normalized (for instance, a carry-out or a number with a leading zero), adjust the exponent and shift the mantissa to normalize it. If the sum is too large or too small for the available bits, this is an overflow or underflow error.
 - **Round the result:** Round the final result to fit the required precision, which can introduce inaccuracies.
 <img width="1000" height="774" alt="image" src="https://github.com/user-attachments/assets/c71f5d96-2730-4a65-a20f-ba9af3e3ee65" />
-
-## 2. Interface
-<img width="1000" height="176" alt="image" src="https://github.com/user-attachments/assets/9fe00b43-6b61-45d2-b930-ebc087c143fe" />
-
 
 # Functional Description
 <img width="1000" height="826" alt="image" src="https://github.com/user-attachments/assets/174d8acd-11d7-465e-a3f0-e1a85ee63ae5" />
