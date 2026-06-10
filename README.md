@@ -10,6 +10,7 @@ The main purpose of this design is to perform arithmetic operations on floating-
 ## 2. Operation
 **Adding and Subtracting floating point numbers procedures:**
 - **Extract and Unpack:** Separate the sign, exponent, and mantissa from both floating-point numbers.
+- **Creating Guard, Round, and Sticky Bits:** Append 24 zero bits to the least significant side of the mantissa to extend its precision. This ensures that no significant bit information is lost during the exponent alignment step, especially when the mantissa is shifted to match the larger exponent.
 - **Align exponents:** Find the number with the smaller exponent. Shift its mantissa to the right until its exponent matches the larger one. The shift amount determines how many bits are shifted to the right.
 - **Add mantissas:** Add the two mantissas together. Remember, subtracting a number by a negative number is equivalent to addition.
 - **Normalize the result:** If adding the mantissas results in a value that is not normalized (for instance, a carry-out or a number with a leading zero), adjust the exponent and shift the mantissa to normalize it. If the sum is too large or too small for the available bits, this is an overflow or underflow error.
