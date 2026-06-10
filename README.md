@@ -20,6 +20,17 @@ The main purpose of this design is to perform arithmetic operations on floating-
 - NaN handling
 - Sub-threshold result handling
 
+## 3. Exception Handling
+- **NaN Handling:** If either input operand is NaN, the output result is set to NaN, and the nan flag is asserted.
+  
+- **Infinity Handling:** If one or both operands are infinity, the design checks the operand signs and operation type to determine whether the result should be infinity or NaN. For example, adding positive infinity and negative infinity produces an invalid result and is handled as NaN.
+  
+- **Zero Handling:** If one operand is zero, the result can be directly derived from the other operand depending on the selected operation. If both operands cancel each other out, the result is set to zero and the zero flag is asserted.
+  
+- **Overflow Handling:** Overflow occurs when the normalized result exponent exceeds the maximum supported exponent value. In this case, the overflow flag is asserted, and the result can be saturated to infinity depending on the design configuration.
+  
+- **Underflow and Sub-threshold Handling:** Underflow occurs when the result exponent is smaller than the minimum normalized exponent. If the result is too small to be represented as a normalized floating-point number, the underflow or sub_threshold flag is asserted. Depending on the implementation, the result may be flushed to zero or represented as a subnormal value.
+
 ## 3. Design Operation
 **Adding and Subtracting floating point numbers procedures:**
 - **Extract and Unpack:** Separate the sign, exponent, and mantissa from both floating-point numbers.
